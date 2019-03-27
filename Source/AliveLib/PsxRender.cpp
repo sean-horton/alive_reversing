@@ -3468,6 +3468,8 @@ EXPORT bool CC PSX_Rects_intersect_point_4FA100(const PSX_RECT* pScreen, const P
 // TODO: Can be refactored MUCH further
 EXPORT void CC PSX_EMU_Render_SPRT_4bit_51F0E0(const PSX_RECT* pRect, int u, int v, unsigned __int8 r, unsigned __int8 g, unsigned __int8 b, WORD clut, char bSemiTrans)
 {
+    NOT_IMPLEMENTED();
+
     const int tpagey = sTexture_page_y_BD0F10 + v;
     const unsigned int rect_w = pRect->w;
     const WORD* pClutSrc1 = (WORD *)((char *)sPsxVram_C1D160.field_4_pLockedPixels  + 32 * ((clut & 63) + ((unsigned int)clut >> 6 << 6)));

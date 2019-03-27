@@ -13,7 +13,7 @@
 
 #undef ERROR
 
-#define LOGGING 1
+#define LOGGING 0
 
 #ifdef LOGGING
 #define TRACE_ENTRYEXIT Logging::AutoLog __funcTrace(FNAME)

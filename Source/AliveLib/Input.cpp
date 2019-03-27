@@ -562,7 +562,7 @@ void NewParseSettingsIni()
                         }
                         else
                         {
-                            s_VGA_KeepAspectRatio = false;
+                            //s_VGA_KeepAspectRatio = false;
                         }
                     }
                     else if (param[0] == "filter_screen")
