@@ -3,6 +3,8 @@
 #include "SDLSoundBuffer.hpp"
 #include "SDLSoundSystem.hpp"
 
+#include "fluidsynth.h"
+
 #if USE_SDL2_SOUND
 
 bool gReverbEnabled = false;

@@ -368,7 +368,7 @@ add_library(AliveLib ${AliveLibSrc})
 target_include_directories(AliveLib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
-    PRIVATE src ${CMAKE_BINARY_DIR})
+    PRIVATE src ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/3rdParty/fluidsynth-lite/include ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdParty/fluidsynth-lite/include)
 
 target_compile_definitions(AliveLib PRIVATE "_CRT_SECURE_NO_WARNINGS")
 target_compile_definitions(AliveLib PRIVATE "BEHAVIOUR_CHANGE_FORCE_WINDOW_MODE")
@@ -410,6 +410,7 @@ endif()
 target_link_libraries(AliveLib
     EasyLogging++
     googletest
+    libfluidsynth
     Cinder
     ${WIN32_LIBS}
     ${SDL2_LIBRARIES}

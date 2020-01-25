@@ -65,3 +65,6 @@ target_include_directories(googletest PUBLIC
 
 export(TARGETS googletest FILE googletest.cmake)
 set_property(TARGET googletest PROPERTY FOLDER "3rdParty")
+
+add_subdirectory(fluidsynth-lite)
+set_property(TARGET libfluidsynth PROPERTY FOLDER "3rdParty")
