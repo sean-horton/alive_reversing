@@ -3,26 +3,13 @@
 #include "SDLSoundBuffer.hpp"
 #include "SDLSoundSystem.hpp"
 
-#define FLUIDSYNTH_NOT_A_DLL
-#include "fluidsynth.h"
-
 #if USE_SDL2_SOUND
 
 bool gReverbEnabled = false;
 bool gAudioStereo = true;
 
-
-
 void SND_InitVolumeTable_SDL()
 {
-    fluid_settings_t* settings;
-    fluid_synth_t* synth;
-    settings = new_fluid_settings();
-    synth = new_fluid_synth(settings);
-    /* Do useful things here */
-    delete_fluid_synth(synth);
-    delete_fluid_settings(settings);
-
     for (int i = 0; i < 127; i++)
     {
         sVolumeTable_BBBD38[i] = i;

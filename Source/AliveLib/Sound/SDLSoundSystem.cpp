@@ -4,6 +4,64 @@
 #include "Reverb.hpp"
 #include "Sys.hpp"
 
+#define FLUIDSYNTH_NOT_A_DLL
+#include "fluidsynth.h"
+
+class FluidSynth
+{
+public:
+    bool Init()
+    {
+        mSettings = new_fluid_settings();
+        
+        fluid_settings_setint(mSettings, "synth.audio-channels", 256);
+        fluid_settings_setnum(mSettings, "synth.sample-rate", 44100.0);
+
+        mSynth = new_fluid_synth(mSettings);
+        return true;
+    }
+
+    ~FluidSynth()
+    {
+        if (mSynth)
+        {
+            delete_fluid_synth(mSynth);
+        }
+
+        if (mSettings)
+        {
+            delete_fluid_settings(mSettings);
+        }
+    }
+
+    void Play()
+    {
+        int num = fluid_synth_sfload(mSynth, "oddworld.sf2", 1);
+        if (num == -1)
+        {
+            // failed
+        }
+
+
+        fluid_player_t* pPlayer = new_fluid_player(mSynth);
+
+        fluid_player_add(pPlayer, "midi\\26PS1 SEQ.mid");
+
+        fluid_player_play(pPlayer);
+    }
+
+    void AudioCallBack(Uint8 *stream, int len)
+    {
+        fluid_synth_write_s16(mSynth, len / (2 * sizeof(short)), stream, 0, 2, stream, 1, 2);
+    }
+
+private:
+    fluid_settings_t* mSettings = nullptr;
+    fluid_synth_t* mSynth = nullptr;
+};
+
+static FluidSynth* gFluidSynth = nullptr;
+
 void SDLSoundSystem::Init(unsigned int /*sampleRate*/, int /*bitsPerSample*/, int /*isStereo*/)
 {
     mCreated = false;
@@ -23,7 +81,7 @@ void SDLSoundSystem::Init(unsigned int /*sampleRate*/, int /*bitsPerSample*/, in
     mAudioDeviceSpec.format = AUDIO_S16;
     mAudioDeviceSpec.channels = 2;
     mAudioDeviceSpec.freq = 44100;
-    mAudioDeviceSpec.samples = 2048;
+    mAudioDeviceSpec.samples = 256;
     mAudioDeviceSpec.userdata = this;
 
     if (SDL_OpenAudio(&mAudioDeviceSpec, NULL) < 0)
@@ -63,6 +121,9 @@ void SDLSoundSystem::Init(unsigned int /*sampleRate*/, int /*bitsPerSample*/, in
         }
     }
 
+    gFluidSynth = new FluidSynth();
+    gFluidSynth->Init();
+
     sLastNotePlayTime_BBC33C = SYS_GetTicks();
     mCreated = true;
 
@@ -70,9 +131,11 @@ void SDLSoundSystem::Init(unsigned int /*sampleRate*/, int /*bitsPerSample*/, in
     mAudioRingBuffer.resize(mAudioDeviceSpec.samples * 2);
 
     // TODO: Test just running this on the main thread
-    mRenderAudioThread.reset(new std::thread(std::bind(&SDLSoundSystem::RenderAudioThread, this)));
+   // mRenderAudioThread.reset(new std::thread(std::bind(&SDLSoundSystem::RenderAudioThread, this)));
 
     SDL_PauseAudio(0);
+
+    gFluidSynth->Play();
 }
 
 
@@ -127,6 +190,9 @@ void SDLSoundSystem::AudioCallBack(Uint8 *stream, int len)
 {
     memset(stream, 0, len);
 
+    gFluidSynth->AudioCallBack(stream, len);
+
+    /*
     StereoSample_S16* pSampleBuffer = reinterpret_cast<StereoSample_S16*>(stream);
     const int bufferLenSamples = len / sizeof(StereoSample_S16);
     const int readAvilSamples = static_cast<int>(mAudioRingBuffer.getAvailableRead());
@@ -138,7 +204,7 @@ void SDLSoundSystem::AudioCallBack(Uint8 *stream, int len)
     if (!mAudioRingBuffer.read(pSampleBuffer, bufferLenSamples))
     {
         LOG_ERROR("Ring buffer read failure!");
-    }
+    }*/
 }
 
 
