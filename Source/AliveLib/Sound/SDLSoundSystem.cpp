@@ -81,7 +81,7 @@ void SDLSoundSystem::Init(unsigned int /*sampleRate*/, int /*bitsPerSample*/, in
     mAudioDeviceSpec.format = AUDIO_S16;
     mAudioDeviceSpec.channels = 2;
     mAudioDeviceSpec.freq = 44100;
-    mAudioDeviceSpec.samples = 256;
+    mAudioDeviceSpec.samples = 2048;
     mAudioDeviceSpec.userdata = this;
 
     if (SDL_OpenAudio(&mAudioDeviceSpec, NULL) < 0)
