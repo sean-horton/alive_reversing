@@ -116,7 +116,6 @@ private:
 
     float LoadReverb(u16 address);
     void WriteReverb(u16 address, float value);
-    float SaturateSample(float sample);
 };
 
 }

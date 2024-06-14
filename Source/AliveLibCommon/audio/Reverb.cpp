@@ -381,8 +381,6 @@ ReverbIlleprih::ReverbIlleprih()
 
 std::pair<f32, f32> ReverbIlleprih::Process(f32 left, f32 right)
 {
-    // TODO consider diving input to fit the -1.0f - 1.0f range and then multiplying back to s16 range at the end. But it shouldn't make any difference.
-
     // Input from mixer
     const float Lin = this->currentSetting.vLIN * left;
     const float Rin = this->currentSetting.vRIN * right;
@@ -391,42 +389,42 @@ std::pair<f32, f32> ReverbIlleprih::Process(f32 left, f32 right)
     // Maybe the value is there just to 0 fill the work area and it's not really necessary and getting the previous address is intended.
 
     // Same side reflection L->L and R->R
-    float mlSame = SaturateSample((Lin + LoadReverb(this->currentSetting.dLSAME) * this->currentSetting.vWALL - LoadReverb(this->currentSetting.mLSAME - 1)) * this->currentSetting.vIIR + LoadReverb(this->currentSetting.mLSAME - 1));
-    float mrSame = SaturateSample((Rin + LoadReverb(this->currentSetting.dRSAME) * this->currentSetting.vWALL - LoadReverb(this->currentSetting.mRSAME - 1)) * this->currentSetting.vIIR + LoadReverb(this->currentSetting.mRSAME - 1));
+    float mlSame = (Lin + LoadReverb(this->currentSetting.dLSAME) * this->currentSetting.vWALL - LoadReverb(this->currentSetting.mLSAME - 1)) * this->currentSetting.vIIR + LoadReverb(this->currentSetting.mLSAME - 1);
+    float mrSame = (Rin + LoadReverb(this->currentSetting.dRSAME) * this->currentSetting.vWALL - LoadReverb(this->currentSetting.mRSAME - 1)) * this->currentSetting.vIIR + LoadReverb(this->currentSetting.mRSAME - 1);
 
     WriteReverb(this->currentSetting.mLSAME, mlSame);
     WriteReverb(this->currentSetting.mRSAME, mrSame);
 
     // Different side reflection L->R and R->L
-    float mlDiff = SaturateSample((Lin + LoadReverb(this->currentSetting.dRDIFF) * this->currentSetting.vWALL - LoadReverb(this->currentSetting.mLDIFF - 1)) * this->currentSetting.vIIR + LoadReverb(this->currentSetting.mLDIFF - 1));
-    float mrDiff = SaturateSample((Rin + LoadReverb(this->currentSetting.dLDIFF) * this->currentSetting.vWALL - LoadReverb(this->currentSetting.mRDIFF - 1)) * this->currentSetting.vIIR + LoadReverb(this->currentSetting.mRDIFF - 1));
+    float mlDiff = (Lin + LoadReverb(this->currentSetting.dRDIFF) * this->currentSetting.vWALL - LoadReverb(this->currentSetting.mLDIFF - 1)) * this->currentSetting.vIIR + LoadReverb(this->currentSetting.mLDIFF - 1);
+    float mrDiff = (Rin + LoadReverb(this->currentSetting.dLDIFF) * this->currentSetting.vWALL - LoadReverb(this->currentSetting.mRDIFF - 1)) * this->currentSetting.vIIR + LoadReverb(this->currentSetting.mRDIFF - 1);
 
     WriteReverb(this->currentSetting.mLDIFF, mlDiff);
     WriteReverb(this->currentSetting.mRDIFF, mrDiff);
 
     // Early echo (comb filter with input from buffer)
-    float l = SaturateSample(this->currentSetting.vCOMB1 * LoadReverb(this->currentSetting.mLCOMB1) + this->currentSetting.vCOMB2 * LoadReverb(this->currentSetting.mLCOMB2) + this->currentSetting.vCOMB3 * LoadReverb(this->currentSetting.mLCOMB3) + this->currentSetting.vCOMB4 * LoadReverb(this->currentSetting.mLCOMB4));
-    float r = SaturateSample(this->currentSetting.vCOMB1 * LoadReverb(this->currentSetting.mRCOMB1) + this->currentSetting.vCOMB2 * LoadReverb(this->currentSetting.mRCOMB2) + this->currentSetting.vCOMB3 * LoadReverb(this->currentSetting.mRCOMB3) + this->currentSetting.vCOMB4 * LoadReverb(this->currentSetting.mRCOMB4));
+    float l = this->currentSetting.vCOMB1 * LoadReverb(this->currentSetting.mLCOMB1) + this->currentSetting.vCOMB2 * LoadReverb(this->currentSetting.mLCOMB2) + this->currentSetting.vCOMB3 * LoadReverb(this->currentSetting.mLCOMB3) + this->currentSetting.vCOMB4 * LoadReverb(this->currentSetting.mLCOMB4);
+    float r = this->currentSetting.vCOMB1 * LoadReverb(this->currentSetting.mRCOMB1) + this->currentSetting.vCOMB2 * LoadReverb(this->currentSetting.mRCOMB2) + this->currentSetting.vCOMB3 * LoadReverb(this->currentSetting.mRCOMB3) + this->currentSetting.vCOMB4 * LoadReverb(this->currentSetting.mRCOMB4);
 
     // Late reverb APF1 (All pass filter 1 with input from COMB)
-    l = SaturateSample(l - SaturateSample(this->currentSetting.vAPF1 * LoadReverb(this->currentSetting.mLAPF1 - this->currentSetting.dAPF1)));
-    r = SaturateSample(r - SaturateSample(this->currentSetting.vAPF1 * LoadReverb(this->currentSetting.mRAPF1 - this->currentSetting.dAPF1)));
+    l -= this->currentSetting.vAPF1 * LoadReverb(this->currentSetting.mLAPF1 - this->currentSetting.dAPF1);
+    r -= this->currentSetting.vAPF1 * LoadReverb(this->currentSetting.mRAPF1 - this->currentSetting.dAPF1);
 
     WriteReverb(this->currentSetting.mLAPF1, l);
     WriteReverb(this->currentSetting.mRAPF1, r);
 
-    l = SaturateSample(l * this->currentSetting.vAPF1 + LoadReverb(this->currentSetting.mLAPF1 - this->currentSetting.dAPF1));
-    r = SaturateSample(r * this->currentSetting.vAPF1 + LoadReverb(this->currentSetting.mRAPF1 - this->currentSetting.dAPF1));
+    l = l * this->currentSetting.vAPF1 + LoadReverb(this->currentSetting.mLAPF1 - this->currentSetting.dAPF1);
+    r = r * this->currentSetting.vAPF1 + LoadReverb(this->currentSetting.mRAPF1 - this->currentSetting.dAPF1);
 
     // Late reverb APF2 (All pass filter 2 with input from APF1)
-    l = SaturateSample(l - SaturateSample(this->currentSetting.vAPF2 * LoadReverb(this->currentSetting.mLAPF2 - this->currentSetting.dAPF2)));
-    r = SaturateSample(r - SaturateSample(this->currentSetting.vAPF2 * LoadReverb(this->currentSetting.mRAPF2 - this->currentSetting.dAPF2)));
+    l -= this->currentSetting.vAPF2 * LoadReverb(this->currentSetting.mLAPF2 - this->currentSetting.dAPF2);
+    r -= this->currentSetting.vAPF2 * LoadReverb(this->currentSetting.mRAPF2 - this->currentSetting.dAPF2);
 
     WriteReverb(this->currentSetting.mLAPF2, l);
     WriteReverb(this->currentSetting.mRAPF2, r);
 
-    l = SaturateSample(l * this->currentSetting.vAPF2 + LoadReverb(this->currentSetting.mLAPF2 - this->currentSetting.dAPF2));
-    r = SaturateSample(r * this->currentSetting.vAPF2 + LoadReverb(this->currentSetting.mRAPF2 - this->currentSetting.dAPF2));
+    l = l * this->currentSetting.vAPF2 + LoadReverb(this->currentSetting.mLAPF2 - this->currentSetting.dAPF2);
+    r = r * this->currentSetting.vAPF2 + LoadReverb(this->currentSetting.mRAPF2 - this->currentSetting.dAPF2);
 
     l *= volumeLeft;
     r *= volumeRight;
@@ -447,20 +445,12 @@ void ReverbIlleprih::WriteReverb(u16 address, float value)
     this->workArea[(u16)(currentAddress + address)] = value;
 }
 
-// TODO consider removing this. It shouldn't cause any overflow issues and should make reverb
-// slightly less fuzzy in the edge cases
-float ReverbIlleprih::SaturateSample(float sample)
-{
-    return std::clamp(sample, -32768.0f, 32767.0f);
-}
-
 // PSX is doing << 8 to get it to the s16 range, so we can just div by 128
 void ReverbIlleprih::ChangeVolume(u8 _volumeLeft, u8 _volumeRight)
 {
     this->volumeLeft = _volumeLeft / 128.0f;
     this->volumeRight = _volumeRight / 128.0f;
 }
-
 
 // PSX << 3 these to get the address into a s16 array. This would mean we only have to << 2,
 // but since it's setup to tick at 44_100 Hz instead of 22_050 Hz, the area has to be doubled
