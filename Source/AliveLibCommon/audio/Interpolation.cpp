@@ -236,22 +236,28 @@ void VoiceCounterDuckstation::Reset()
 ///////////////////////
 // Illeprih's magic
 
-// Interpolation window is centered and first 3 samples are from the previous block,
-// so the first block has to start at index 2.
+// 1/n of a semitone
 static const u32 IlleprihFinePitchResolution = 128;
+// 12 semitones - full octave
 static const s32 IlleprihSampleRateCount = IlleprihFinePitchResolution * 12;
+
+// Position of a fixed point for sample rate calculations
+static const u32 IlleprihSampleRateBitDepth = 26;
+// Base value that will represent frequency of 44_100 Hz
+static const u32 IlleprihBaseSampleRate = 1 << IlleprihSampleRateBitDepth;
 
 static const u32 IlleprihInterpolationBitDept = 9;
 static const u32 IlleprihInterpolationWindowLen = 1 << IlleprihInterpolationBitDept;
 
-static const u32 IlleprihSampleRateBitDepth = 26;
-static const u32 IlleprihBaseSampleRate = 1 << IlleprihSampleRateBitDepth;
-
+// Interpolation window is centered and first 3 samples are from the previous block,
+// so the first block has to start at index 2.
 static const u32 IlleprihStartOffset = 2 << IlleprihInterpolationBitDept;
 static const u32 IlleprihInterpolationAnd = (1 << IlleprihInterpolationBitDept) - 1;
 static const u32 IlleprihInterpolationShift = IlleprihSampleRateBitDepth - IlleprihInterpolationBitDept;
 
-// interpolation weights
+// interpolation weights (Catmull-Rom splines)
+// Due to their symetrical nature, we can just store the weights for sample0 and sample3 in weights[0]
+// and weights for sample1 and sample2 in weights[1] and simply use regular and reverse index to get both of the values
 constexpr std::array<std::array<f32, IlleprihInterpolationWindowLen + 1>, 2> GenerateInterpolationWeights()
 {
     std::array<std::array<f32, IlleprihInterpolationWindowLen + 1>, 2> weights = {};
@@ -268,12 +274,14 @@ constexpr std::array<std::array<f32, IlleprihInterpolationWindowLen + 1>, 2> Gen
 }
 std::array<std::array<f32, IlleprihInterpolationWindowLen + 1>, 2> interpWeights = GenerateInterpolationWeights();
 
-// sample rate
+// sample rates for an entire octave represented as a fixed point. We only need to store a single octave, octave shifts
+// can be handeled by doubling or halving frequencies per octave - shl/shr.
 constexpr std::array<u32, IlleprihSampleRateCount> GenerateSampleRates()
 {
     std::array<u32, IlleprihSampleRateCount> sampleRates = {};
     for (size_t i = 0; i < IlleprihSampleRateCount; i++)
     {
+        // Base sample rate value (representing 44_100) multiplied by 2^0 -> 2^1.
         sampleRates[i] = (u32) std::round(IlleprihBaseSampleRate * std::pow(2, i / (double) IlleprihSampleRateCount));
     }
     return sampleRates;
